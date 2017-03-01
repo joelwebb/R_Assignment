@@ -1,0 +1,240 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+First Section
+```{r}
+getwd() #Wd was C:/Users/Joe/Desktop/R_Assignment
+setwd("C:/Users/Joe/Desktop/R_Assignment") #Change wd to C:/Users/Joe/Desktop/R_Assignment
+getwd()
+read.table("snp_position.txt", fill = TRUE) -> Snplist # create a variable titled Snplist for our data
+Tabbed_snp <- read.delim("snp_position.txt",header=T,stringsAsFactors = F)
+read.table("fang_et_al_genotypes.txt", fill = TRUE) -> Fang_genotypes # create a variable titled Fang_genotypes
+Snplist
+Fang_genotypes
+Tabbed_snp
+
+```
+
+Look at data
+```{r}
+
+# file size
+# # of columns
+# # of lines 
+attributes(Snplist)
+names(Snplist)
+dim(Snplist)
+class(Snplist)
+typeof(Snplist) # Type of object
+attributes(Snplist) #additional arbitrary metadata
+length(Snplist) # how many elements it contains
+
+attributes(Fang_genotypes)
+names(Fang_genotypes)
+dim(Fang_genotypes)
+class(Fang_genotypes)
+typeof(Fang_genotypes) # Type of object
+attributes(Fang_genotypes) #additional arbitrary metadata
+length(Fang_genotypes) # how many elements it contains
+
+```
+
+Make a new variable to rename header columns
+
+```{r}
+Fang_new_SNP_Names <- data.frame(Fang_genotypes[1,])
+
+# get column names
+data.frame(colnames(Fang_genotypes)) -> Fang_column_Names
+
+transposed_new_SNP_names <- t(Fang_new_SNP_Names)
+
+
+#Add in name to all columns in fang et all genotypes
+
+colnames(Fang_genotypes) <- transposed_new_SNP_names
+
+names(Fang_genotypes)[1]<-paste("SNP_ID")
+names(Fang_genotypes)[2]<-paste("Gene")
+
+#Make a new snp information file that we want to join
+
+names(Tabbed_snp)[1]<-paste("SNP_ID")
+names(Tabbed_snp)[3]<-paste("Chr")
+names(Tabbed_snp)[4]<-paste("Position")
+Tabbed_snp2 <- data.frame(Tabbed_snp$SNP_ID, Tabbed_snp$Chr, Tabbed_snp$Position)
+
+```
+
+
+Extract maize genes for ZMMIL, ZMMLR, and ZMMMR and teos genes for ZMPBAL, ZMPIL, ZMPJA
+
+```{r}
+geno <- Fang_genotypes
+
+maize_geno <- geno[(geno$Group == "ZMMIL")|(geno$Group == "ZMMLR")|(geno$Group =="ZMMMR"),]
+
+teo_geno<- geno[(geno$Group == "ZMPBA")|(geno$Group == "ZMPIL")|(geno$Group == "ZMPJA"),]
+```
+
+
+Transpose genotype files
+
+```{r}
+
+as.data.frame(t(maize_geno)) -> maize_Transposed_Genotypes
+as.data.frame(t(teo_geno)) -> teo_Transposed_Genotypes
+
+```
+
+
+join these data sets so that we have both genotypes and positions formatted such that the first column is "SNP_ID", the second column is "Chromosome", the third column is "Position"
+
+```{r}
+teo_merged <- merge(Tabbed_snp, teo_Transposed_Genotypes, by.x = "SNP_ID",by.y = "row.names") 
+
+
+maize_merged <-merge(Tabbed_snp, maize_Transposed_Genotypes, by.x = "SNP_ID",by.y = "row.names") 
+
+
+```
+
+
+Extract out only the columns that we want
+
+```{r}
+cut_maize<-maize_merged[,c(1,3,4,16:1588)]
+
+cut_teo<-teo_merged[,c(1,3,4,16:990)]
+```
+
+
+Next we need to sort each of the files based on snp position
+
+```{r}
+cut_maize[order(as.numeric(as.character(cut_maize$Position)),decreasing = T),] -> maize_decreasing_snps
+
+cut_maize[order(as.numeric(as.character(cut_maize$Position))),] -> maize_increasing_snps 
+
+cut_teo[order(as.numeric(as.character(cut_teo$Position))),] -> teo_increasing_snps
+
+cut_teo[order(as.numeric(as.character(cut_teo$Position)),decreasing=T),] -> teo_decreasing_snps
+
+```
+
+
+Replace the ? in some files for the - indicator by copying into excel and replacing
+
+```{r}
+  
+write.csv(teo_decreasing_snps, "teo_decreasing_snps.csv")
+  
+Replaced_teo <- read.csv("teo_decreasing_snps_edited.csv")
+  
+write.csv(maize_decreasing_snps, "maize_decreasing_snps.csv")
+  
+Replaced_maize <- read.csv("maize_decreasing_snps_edited.csv")
+
+#or use this
+#maize_decreasing_snps[ maize_decreasing_snps == "?/?" ] = "-/-"
+
+#teo_decreasing_snps[ teo_decreasing_snps == "?/?" ] = "-/-"
+
+```
+Make new directories for each one
+
+```{r}
+dir.create("maize_chr_increasing")
+dir.create("maize_chr_dashes") 
+dir.create("teosinte_chr_increasing")
+dir.create("teosinte_chr_dashes")
+```
+Make files to populate each directory and move them into respective folders
+
+```{r}
+
+
+for (i in 1:10) { write.csv(maize_increasing_snps[maize_increasing_snps$Chromosome == i,] write.csv(maize_chr_loop,sprintf('Chr%d.csv', i))})
+
+for (i in 1:10) { maize_chr_loop <- maize_increasing_snps[maize_increasing_snps$Chromosome == i,] write.csv(maize_chr_loop, sprintf("Chr%d.csv", i), row.names = F) }
+
+for (i in 1:10) { maize_loop <- Replaced_maize[Replaced_maize$Chromosome == i,] write.csv(maize_chr_loop,sprintf("Chr%d.csv", i), row.names = F) }
+
+for (i in 1:10) { teo_loop <- teo_increasing_snps[teo_increasing_snps$Chromosome == i,] write.csv(teo_chr_loop,sprintf("Chr%d.csv", i), row.names = F) }
+
+
+
+
+```
+Graphing section
+We will use ggplot to visualize our data in this part. As mentioned today in class, it may be easier to reshape the original data (make it tidy) using the melt command in the reshape2 package before attempting this part.
+
+SNPs per chromosome
+
+Plot the total number of SNPs in our dataset on each chromosome. What groups contribute most of these SNPs?
+#Chromosome 1, 2 & 5 contribute the most for Teo
+#Same for Maize but also #7
+
+```{r}
+library(ggplot2)
+ggplot(teo_decreasing_snps) + geom_bar(aes(x = teo_decreasing_snps$Chr)) -> Teo_plot_by_Chromosome
+maize_plot_by_Chromosome <- ggplot(maize_decreasing_snps) + geom_bar(aes(x = maize_decreasing_snps$Chr))
+```
+
+
+Missing data and amount of heterozygosity
+
+Create a new column to indicate whether a particular site is homozygous (has the same nucleotide on both chromosomes (i.e., A/A, C/C, G/G, T/T) or heterozygous (otherwise)). 
+
+```{r}
+homozygotes <- c("A/A", "C/C", "G/G", "T/T")
+
+
+Test_maize2 <- is.na(maize_decreasing_snps)
+
+maize_decreasing_snps <- data.frame(lapply(maize_decreasing_snps, as.character), stringsAsFactors=FALSE)
+maize_decreasing_snps[maize_decreasing_snps=="A/A"] <- "TRUE"
+maize_decreasing_snps[maize_decreasing_snps=="T/T"] <- "TRUE"
+maize_decreasing_snps[maize_decreasing_snps=="G/G"] <- "TRUE"
+maize_decreasing_snps[maize_decreasing_snps=="C/C"] <- "TRUE"
+maize_decreasing_snps[maize_decreasing_snps=="A/C"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="A/T"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="A/G"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="C/A"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="C/G"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="C/T"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="T/A"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="T/C"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="T/G"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="G/A"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="G/T"] <- "FALSE"
+maize_decreasing_snps[maize_decreasing_snps=="G/C"] <- "FALSE"
+maize_decreasing_snps[which(is.na(maize_decreasing_snps)),] <- "FALSE"
+
+idx <- data.frame(isTRUE(maize_decreasing_snps))
+Test_maize <- ifelse(maize_decreasing_snps==TRUE, 1,0)
+
+
+```
+
+
+Recode the missing data as NA. 
+
+
+```{r}
+
+```
+
+Sort your dataframe using Group and Species_ID values. Make a graph that shows the proportion of homozygous and heterozygous sites as well as missing data in each species (you won't be able to see species names) and each group. For groups normalize the height of individual bars using one of the ggplot "position adjustments" options.
+
+
+
+Your own visualization
+
+Visualize one other feature of the dataset. The choice is up to you!
