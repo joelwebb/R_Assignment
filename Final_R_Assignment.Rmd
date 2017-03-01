@@ -197,6 +197,7 @@ homozygotes <- c("A/A", "C/C", "G/G", "T/T")
 
 
 Test_maize2 <- is.na(maize_decreasing_snps)
+Test_maize3 <- ifelse(Test_maize2==FALSE,maize_decreasing_snps,0)
 
 maize_decreasing_snps <- data.frame(lapply(maize_decreasing_snps, as.character), stringsAsFactors=FALSE)
 maize_decreasing_snps[maize_decreasing_snps=="A/A"] <- "TRUE"
@@ -215,26 +216,30 @@ maize_decreasing_snps[maize_decreasing_snps=="T/G"] <- "FALSE"
 maize_decreasing_snps[maize_decreasing_snps=="G/A"] <- "FALSE"
 maize_decreasing_snps[maize_decreasing_snps=="G/T"] <- "FALSE"
 maize_decreasing_snps[maize_decreasing_snps=="G/C"] <- "FALSE"
-maize_decreasing_snps[which(is.na(maize_decreasing_snps)),] <- "FALSE"
 
-idx <- data.frame(isTRUE(maize_decreasing_snps))
-Test_maize <- ifelse(maize_decreasing_snps==TRUE, 1,0)
+#Recode the missing data as NA
+maize_decreasing_snps[maize_decreasing_snps==NA] <- "FALSE"
+
+Test_maize_Homozygotes <- ifelse(maize_decreasing_snps==TRUE,1,0)
 
 
 ```
 
 
-Recode the missing data as NA. 
-
+Sort your dataframe using Group and Species_ID values. Make a graph that shows the proportion of homozygous and heterozygous sites as well as missing data in each species (you won't be able to see species names) and each group. For groups normalize the height of individual bars using one of the ggplot "position adjustments" options.
 
 ```{r}
 
 ```
 
-Sort your dataframe using Group and Species_ID values. Make a graph that shows the proportion of homozygous and heterozygous sites as well as missing data in each species (you won't be able to see species names) and each group. For groups normalize the height of individual bars using one of the ggplot "position adjustments" options.
-
-
 
 Your own visualization
 
 Visualize one other feature of the dataset. The choice is up to you!
+
+```{r}
+
+ggplot(Tabbed_snp) + geom_bar(aes(x =Tabbed_snp$Chr==3)) -> Joe_graph
+Joe_graph
+```
+
